@@ -14,25 +14,32 @@ const handler = NextAuth({
                 password: { label: "Password", type: "password" }
             },
             async authorize(credentials) {
-                if (mongoose.connection.readyState !== 1) {
-                    await mongoose.connect('mongodb://127.0.0.1:27017/blog_app');
-                }
+                try {
+                    if (mongoose.connection.readyState !== 1) {
+                        await mongoose.connect('mongodb://127.0.0.1:27017/blog_app');
+                    }
 
-                const user = await User.findOne({ email: credentials?.email });
-                if (!user) {
-                    throw new Error("No user found with this email");
-                }
+                    console.log('Looking for user with email:', credentials?.email?.toLowerCase());
+                    const user = await User.findOne({ email: credentials?.email?.toLowerCase() });
+                    console.log('User found:', user ? 'yes' : 'no');
+                    if (!user) {
+                        throw new Error("No user found with this email");
+                    }
 
-                const isValid = await bcrypt.compare(credentials!.password, user.password);
-                if (!isValid) {
-                    throw new Error("Incorrect password");
-                }
+                    const isValid = await bcrypt.compare(credentials!.password, user.password);
+                    console.log('Password valid:', isValid);
+                    if (!isValid) {
+                        throw new Error("Incorrect password");
+                    }
 
-                return { 
-                    id: user._id.toString(), 
-                    email: user.email, 
-                    name: user.name 
-                };
+                    return { 
+                        id: user._id.toString(), 
+                        email: user.email, 
+                        name: user.name 
+                    };
+                } catch {
+                    console.log('Unauthorized access attempt for email:' );
+                }
             }
         })
     ],
