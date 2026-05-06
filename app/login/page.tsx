@@ -27,7 +27,7 @@ export default function LoginPage() {
             setError("Invalid email or password");
         } else {
             router.push('/');
-            router.refresh(); 
+            router.refresh();
         }
     };
 
@@ -42,34 +42,34 @@ export default function LoginPage() {
 
                     <div className="flex flex-col gap-1">
                         <label className="text-sm font-medium text-zinc-700">Email</label>
-                        <input 
-                            required 
-                            type="email" 
-                            placeholder="email@example.com" 
-                            onChange={e => setForm({ ...form, email: e.target.value })} 
-                            className="border p-2.5 rounded-lg focus:ring-2 ring-blue-500 outline-none" 
+                        <input
+                            required
+                            type="email"
+                            placeholder="email@example.com"
+                            onChange={e => setForm({ ...form, email: e.target.value })}
+                            className="border p-2.5 rounded-lg focus:ring-2 ring-blue-500 outline-none"
                         />
                     </div>
 
                     <div className="flex flex-col gap-1">
                         <label className="text-sm font-medium text-zinc-700">Password</label>
-                        <input 
-                            required 
-                            type="password" 
-                            placeholder="••••••••" 
-                            onChange={e => setForm({ ...form, password: e.target.value })} 
-                            className="border p-2.5 rounded-lg focus:ring-2 ring-blue-500 outline-none" 
+                        <input
+                            required
+                            type="password"
+                            placeholder="••••••••"
+                            onChange={e => setForm({ ...form, password: e.target.value })}
+                            className="border p-2.5 rounded-lg focus:ring-2 ring-blue-500 outline-none"
                         />
                     </div>
 
-                    <button 
+                    <button
                         disabled={loading}
-                        type="submit" 
+                        type="submit"
                         className="bg-black text-white py-3 rounded-full font-medium hover:bg-zinc-800 transition-colors mt-2 disabled:bg-zinc-400"
                     >
                         {loading ? 'Signing in...' : 'Sign In'}
                     </button>
-                    
+
                     <p className="text-center text-sm text-zinc-500">
                         No account? <a href="/signup" className="text-blue-600 hover:underline">Create one</a>
                     </p>

@@ -25,7 +25,6 @@ mongoose.connect('mongodb://127.0.0.1:27017/blog_app')
 
 // --- Routes ---
 
-// Get all public blogs for the homepage
 app.get('/api/blogs/public', async (req, res) => {
     try {
         const publicPages = await Page.find({ isPublic: true }).sort({ updatedAt: -1 });
@@ -52,7 +51,25 @@ app.post('/api/auth/signup', async (req, res) => {
     }
 })
 
-// Create or Update a page
+app.post('/api/auth/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        const user = await User.findOne({ email: email.toLowerCase() });
+        if (!user) return res.status(401).json({ message: "User not found" });
+
+        const isValid = bcrypt.compare(password, user.password);
+        if (!isValid) return res.status(401).json({ message: "Invalid password" });
+
+        res.json({
+            id: user._id,
+            email: user.email,
+            name: user.name
+        });
+    } catch {
+        res.status(500).json({ error: err.message });
+    }
+})
+
 app.post('/api/pages', async (req, res) => {
     try {
         const { _id, blocks, isPublic } = req.body;
@@ -65,6 +82,7 @@ app.post('/api/pages', async (req, res) => {
             { _id: queryId },
             {
                 $set: {
+                    title: blocks[0].content,
                     blocks,
                     isPublic,
                     updatedAt: new Date()
@@ -84,7 +102,6 @@ app.post('/api/pages', async (req, res) => {
     }
 });
 
-// Update specifically by ID
 app.patch('/api/pages/:id', async (req, res) => {
     try {
         const { blocks, isPublic } = req.body;
@@ -99,7 +116,6 @@ app.patch('/api/pages/:id', async (req, res) => {
     }
 });
 
-// Fetch a single page by ID
 app.get('/api/pages/:id', async (req, res) => {
     try {
         const page = await Page.findById(req.params.id);

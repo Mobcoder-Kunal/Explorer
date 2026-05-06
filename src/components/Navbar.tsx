@@ -15,9 +15,8 @@ export default function Navbar() {
                     <Link href="/" className="text-2xl font-serif font-bold tracking-tighter mr-4">
                         Explorer<span className="text-blue-600">.</span>
                     </Link>
-                    {/* ... Search input JSX remains the same */}
                 </div>
-                
+
                 {/* Right Side: Links & Auth */}
                 <div className="flex items-center gap-6">
                     <Link href="/our-story" className="hidden sm:block text-sm text-zinc-600 hover:text-black transition-colors">
@@ -33,7 +32,7 @@ export default function Navbar() {
                                 <span className="text-sm hidden md:inline">Write</span>
                             </Link>
 
-                            <button 
+                            <button
                                 onClick={() => signOut()}
                                 className="text-sm text-zinc-600 hover:text-red-600 transition-colors cursor-pointer"
                             >
@@ -48,14 +47,14 @@ export default function Navbar() {
                         </>
                     ) : (
                         <>
-                            <button 
-                                onClick={() => signIn()} 
+                            <button
+                                onClick={() => signIn()}
                                 className="text-sm text-zinc-600 hover:text-black transition-colors cursor-pointer"
                             >
                                 Sign in
                             </button>
-                            <Link 
-                                href="/signup" 
+                            <Link
+                                href="/signup"
                                 className="bg-black text-white px-5 py-2 rounded-full text-sm font-medium hover:bg-zinc-800 transition-colors"
                             >
                                 Get started

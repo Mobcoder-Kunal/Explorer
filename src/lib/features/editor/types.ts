@@ -1,4 +1,4 @@
-export type BlockType = 'text' | 'heading' | 'image' | 'todo';
+export type BlockType = 'text' | 'heading1' | 'heading2' | 'heading3' | 'image' | 'todo';
 
 export interface EditorBlock {
     id: string;

@@ -1,5 +1,5 @@
 import EditorHeader from "@/src/components/EditorHeader";
-import BlockRenderer from "@/src/components/BlockRenderer";
+import BlockRenderer from "@/src/components/EditableBlockRenderer";
 import Navbar from "@/src/components/Navbar";
 
 export default function EditorPage() {

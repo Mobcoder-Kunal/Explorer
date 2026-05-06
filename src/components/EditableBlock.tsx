@@ -1,117 +1,114 @@
 'use client';
 import { useEffect, useRef, useState } from "react";
 import CommandMenu from "./CommandMenu";
-import { useAppDispatch } from "../lib/hooks";
-import { useAppSelector } from "../lib/hooks";
+import { useAppDispatch, useAppSelector } from "../lib/hooks";
 import { EditorBlock } from "../lib/features/editor/types";
-import { updateBlockContent, addBlock, deleteBlock, changeBlockType, mergeWithPrevious } from "../lib/features/editor/editorSlice";
+import {
+    updateBlockContent,
+    addBlock,
+    deleteBlock,
+    changeBlockType,
+    mergeWithPrevious
+} from "../lib/features/editor/editorSlice";
 
 interface Props {
-    block: EditorBlock,
+    block: EditorBlock;
 }
 
 function EditableBlock({ block }: Props) {
     const dispatch = useAppDispatch();
     const contentRef = useRef<HTMLDivElement>(null);
-
-    // Grab the ID of block that should focus
-    const activeBlockId = useAppSelector((state) => state.editor.activeBlockId);
-
-    const [showMenu, setShowMenu] = useState(false)
-    const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 })
-
+    const fileInputRef = useRef<HTMLInputElement>(null);
     const isTyping = useRef(false);
 
-    // Focus logic
+    const activeBlockId = useAppSelector((state) => state.editor.activeBlockId);
+    const [showMenu, setShowMenu] = useState(false);
+    const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
+
     useEffect(() => {
         if (activeBlockId === block.id && contentRef.current) {
             contentRef.current.focus();
-
-            // Move cursor to the end of the text -> Notion behaviour
             const range = document.createRange();
             const selection = window.getSelection();
             range.selectNodeContents(contentRef.current);
-            range.collapse(false); // false means "collapse to end"
+            range.collapse(false);
             selection?.removeAllRanges();
             selection?.addRange(range);
         }
-    }, [activeBlockId, block.id])
+    }, [activeBlockId, block.id]);
 
-    // Sync logic
     useEffect(() => {
         const domElement = contentRef.current;
         if (!domElement || isTyping.current) {
             isTyping.current = false;
             return;
         }
-
         if (domElement.innerText !== block.content) {
             domElement.innerText = block.content;
         }
     }, [block.content, block.type]);
+
     const handleInput = () => {
         if (contentRef.current) {
             isTyping.current = true;
             const text = contentRef.current.innerText;
-            dispatch(
-                updateBlockContent({
-                    id: block.id,
-                    content: text,
-                })
-            )
-            if (text.endsWith('/')) {
-                const selection = window.getSelection();    // Finds exactly where the blinking cursor is
-                const range = selection?.getRangeAt(0);    // Grabs the specific "slice" of the document where that cursor sits.
-                const rect = range?.getBoundingClientRect();// This is the magic. It gives you the pixel coordinates (X and Y) of the cursor relative to the screen.
+            dispatch(updateBlockContent({ id: block.id, content: text }));
 
+            if (text.endsWith('/')) {
+                const selection = window.getSelection();
+                const range = selection?.getRangeAt(0);
+                const rect = range?.getBoundingClientRect();
                 if (rect) {
-                    setMenuPosition({ x: rect.left, y: rect.bottom }) // We save those pixels so we can tell our Menu exactly where to "pop up" on the screen.
-                    setShowMenu(true)
-                } else {
-                    setShowMenu(false)
+                    setMenuPosition({ x: rect.left, y: rect.bottom });
+                    setShowMenu(true);
                 }
+            } else if (showMenu) {
+                setShowMenu(false);
             }
         }
-    }
+    };
 
-    const handleKeyDown = (e) => {
+    const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter') {
             e.preventDefault();
-            // We tell Redux to add a new block right after this one
-            dispatch(
-                addBlock({
-                    afterId: block.id,
-                    type: 'text'
-                })
-            );
+            dispatch(addBlock({ afterId: block.id, type: 'text' }));
         }
-
         if (e.key === 'Backspace') {
             const selection = window.getSelection();
             const range = selection?.getRangeAt(0);
-
             if (range?.startOffset === 0) {
                 e.preventDefault();
                 dispatch(mergeWithPrevious({ id: block.id }));
             }
         }
-    }
+    };
 
-    const handleSelect = (type: 'text' | 'heading' | 'image') => {
+    const handleSelect = (type: 'text' | 'heading1' | 'heading2' | 'heading3' | 'image') => {
         dispatch(changeBlockType({ id: block.id, type }));
+        if (contentRef.current) {
+            const text = contentRef.current.innerText.replace('/', '');
+            dispatch(updateBlockContent({ id: block.id, content: text }));
+            contentRef.current.innerText = text;
+        }
         setShowMenu(false);
-    }
+    };
 
-    const fileInputRef = useRef<HTMLInputElement>(null);
+    const getBlockStyle = () => {
+        switch (block.type) {
+            case 'heading1': return 'text-4xl font-bold mb-4 mt-2';
+            case 'heading2': return 'text-2xl font-bold mb-3 mt-2';
+            case 'heading3': return 'text-xl font-bold mb-2 mt-1';
+            default: return 'text-lg mb-2';
+        }
+    };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
+
         if (file) {
             const reader = new FileReader();
             reader.onloadend = () => {
-                // This converts the image file into a very long string
                 const base64String = reader.result as string;
-                // Update our Redux content with the image data
                 dispatch(updateBlockContent({ id: block.id, content: base64String }));
             };
             reader.readAsDataURL(file);
@@ -128,6 +125,7 @@ function EditableBlock({ block }: Props) {
                     className="hidden"
                     accept="image/*"
                 />
+
                 {block.content ? (
                     <div className="relative">
                         <img src={block.content} className="w-full h-auto rounded-lg" alt="Uploaded content" />
@@ -160,9 +158,8 @@ function EditableBlock({ block }: Props) {
         );
     }
 
-
     return (
-        <div className="relative">
+        <div className="relative group w-full mb-1">
             <div
                 ref={contentRef}
                 contentEditable
@@ -171,41 +168,31 @@ function EditableBlock({ block }: Props) {
                 onKeyDown={handleKeyDown}
                 onInput={handleInput}
                 className={`
-                w-full p-2 rounded-md transition-all duration-150 outline-none
-                hover:bg-slate-50 
-                ${block.content === '' ? 'border border-dashed border-slate-100' : 'border border-transparent'}
-                focus:bg-white focus:ring-2 focus:ring-blue-100 focus:border-transparent
-                ${block.type === 'heading' ? 'text-4xl font-bold mb-4 mt-2' : 'text-lg mb-2'}
-            `}
-                placeholder={block.type === 'heading' ? 'Heading 1' : "Type '/' for commands..."}
-                style={{ minHeight: '1.5em' }}
-            >
-                {showMenu && (
-                    <CommandMenu
-                        position={menuPosition}
-                        onSelect={handleSelect}
-                        close={() => setShowMenu(false)}
-                    />
-                )}
-            </div>
+                    w-full p-3 rounded-lg transition-all duration-200 outline-none
+                    /* The "Glow" part */
+                    border border-transparent
+                    hover:bg-slate-50
+                    focus:bg-white focus:ring-4 focus:ring-blue-100/50 focus:border-blue-400
+                    ${getBlockStyle()}
+                `}
+                data-placeholder={
+                    block.type === 'heading1' ? 'Heading 1' :
+                        block.type === 'heading2' ? 'Heading 2' :
+                            block.type === 'heading3' ? 'Heading 3' :
+                                "Type '/' for commands..."
+                }
+                style={{ minHeight: '3rem' }}
+            />
+
+            {showMenu && (
+                <CommandMenu
+                    position={menuPosition}
+                    onSelect={handleSelect}
+                    close={() => setShowMenu(false)}
+                />
+            )}
         </div>
-    )
+    );
 }
 
 export default EditableBlock;
-
-
-// 1. Why contentEditable instead of <input>?
-// In Notion, blocks can grow vertically as you type long paragraphs. A standard <input> or <textarea> is hard to style and doesn't auto-resize easily. Using a div with contentEditable allows the block to look like natural text (Medium-style) but still be interactive.
-
-// 2. How to read styles[block.type as keyof typeof styles]?
-// This is a TypeScript Power Move.
-
-// We have an object called styles with keys like heading and text.
-
-// block.type is a string from our Redux store.
-
-// as keyof typeof styles tells TypeScript: "Trust me, the string in block.type is definitely one of the keys in the styles object." This prevents a red underline error.
-
-// 3. The onInput vs onChange
-// With contentEditable, standard onChange doesn't always fire correctly. We use onInput because it catches every single character change, ensuring your Redux store is perfectly synced with what is on the screen.

@@ -55,6 +55,6 @@ export default function SignupPage() {
                     Create Account
                 </button>
             </form>
-        </div></>   
+        </div></>
     );
 }

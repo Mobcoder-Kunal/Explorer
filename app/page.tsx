@@ -3,8 +3,8 @@ import Navbar from '@/src/components/Navbar';
 
 async function getPublicPosts() {
     try {
-        const res = await fetch('http://localhost:5000/api/blogs/public', { 
-            cache: 'no-store' 
+        const res = await fetch('http://localhost:5000/api/blogs/public', {
+            cache: 'no-store'
         });
         if (!res.ok) return [];
         return res.json();
@@ -20,7 +20,7 @@ export default async function HomePage() {
     return (
         <div className="min-h-screen bg-white">
             <Navbar />
-            
+
             <main className="max-w-4xl mx-auto py-16 px-6">
                 <header className="mb-12">
                     <h1 className="text-4   xl md:text-6xl font-serif font-medium tracking-tight mb-4">
@@ -50,11 +50,11 @@ export default async function HomePage() {
                                                 <span>•</span>
                                                 <span className="text-blue-600">Public</span>
                                             </div>
-                                            
+
                                             <h2 className="text-2xl font-bold font-serif group-hover:text-zinc-600 transition-colors mb-2">
                                                 {title}
                                             </h2>
-                                            
+
                                             <p className="text-zinc-600 line-clamp-2 leading-relaxed font-sans text-lg">
                                                 {preview}
                                             </p>
