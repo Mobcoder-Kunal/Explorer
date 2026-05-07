@@ -4,7 +4,6 @@ import { signIn, signOut } from "next-auth/react";
 import { useAppSelector } from "@/src/lib/hooks";
 
 export default function Navbar() {
-    // Get auth state from Redux
     const { isAuthenticated, user } = useAppSelector((state) => state.auth);
 
     return (

@@ -20,10 +20,9 @@ export default async function HomePage() {
     return (
         <div className="min-h-screen bg-white">
             <Navbar />
-
             <main className="max-w-4xl mx-auto py-16 px-6">
                 <header className="mb-12">
-                    <h1 className="text-4   xl md:text-6xl font-serif font-medium tracking-tight mb-4">
+                    <h1 className="text-4xl md:text-6xl font-serif font-medium tracking-tight mb-4 text-zinc-900">
                         Stay curious.
                     </h1>
                     <p className="text-xl text-zinc-500 max-w-xl">
@@ -34,35 +33,61 @@ export default async function HomePage() {
                 <div className="space-y-12 border-t pt-12">
                     {posts.length === 0 ? (
                         <div className="text-center py-20 bg-zinc-50 rounded-xl border border-dashed">
-                            <p className="text-zinc-400">No public stories yet. Be the first to write one!</p>
+                            <p className="text-zinc-400">No public stories yet.</p>
                         </div>
                     ) : (
                         posts.map((post: any) => {
-                            const title = post.blocks.find((b: any) => b.type === 'heading')?.content || "Untitled Story";
-                            const preview = post.blocks.find((b: any) => b.type === 'text')?.content || "Click to read more...";
+                            const title = post.title || "Untitled Story";
+                            const previewText = post.blocks.find((b: any) =>
+                                b.type === 'text' && b.content.trim() !== ""
+                            )?.content || "Read more...";
+                            const previewImage = post.blocks.find((b: any) => b.type === 'image')?.content;
+                            
+                            // Get author info
+                            const authorName = post.userId?.username || "Explorer Writer";
+                            const authorPic = post.userId?.profilePic || "https://ui-avatars.com/api/?name=" + authorName;
 
                             return (
-                                <article key={post._id} className="group flex flex-col gap-2">
-                                    <Link href={`/blog/${post._id}`}>
-                                        <div className="cursor-pointer">
-                                            <div className="flex items-center gap-2 mb-2 text-xs font-medium text-zinc-500">
-                                                <span>{new Date(post.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                                                <span>•</span>
-                                                <span className="text-blue-600">Public</span>
-                                            </div>
+                                <article key={post._id} className="group border-b pb-10 last:border-0">
+                                    <div className="flex items-center gap-2 mb-4">
+                                        <img src={authorPic} className="w-6 h-6 rounded-full object-cover" alt={authorName} />
+                                        <span className="text-sm font-medium text-zinc-800">{authorName}</span>
+                                        <span className="text-zinc-400 text-xs">•</span>
+                                        <span className="text-zinc-500 text-xs">{new Date(post.updatedAt).toLocaleDateString()}</span>
+                                    </div>
 
-                                            <h2 className="text-2xl font-bold font-serif group-hover:text-zinc-600 transition-colors mb-2">
+                                    <Link href={`/blog/${post._id}`} className="flex flex-col md:flex-row gap-8 justify-between items-start">
+                                        <div className="flex-1">
+                                            <h2 className="text-2xl font-bold font-serif group-hover:text-zinc-600 transition-colors mb-3 leading-snug">
                                                 {title}
                                             </h2>
-
-                                            <p className="text-zinc-600 line-clamp-2 leading-relaxed font-sans text-lg">
-                                                {preview}
+                                            <p className="text-zinc-600 line-clamp-2 leading-relaxed font-sans text-lg mb-4">
+                                                {previewText}
                                             </p>
-
-                                            <div className="mt-4 flex items-center gap-1 text-sm font-semibold text-blue-600 opacity-70 group-hover:opacity-100 transition-opacity">
-                                                Read full story <span>→</span>
+                                            
+                                            {/* --- NEW: Stats Row --- */}
+                                            <div className="flex items-center gap-4 text-zinc-500 text-sm">
+                                                <div className="flex items-center gap-1.5 bg-zinc-50 px-2 py-1 rounded-full">
+                                                    <span>👀</span> {post.views || 0}
+                                                </div>
+                                                <div className="flex items-center gap-1.5 bg-zinc-50 px-2 py-1 rounded-full">
+                                                    <span>❤️‍🔥</span> {post.likes?.length || 0}
+                                                </div>
+                                                <div className="flex items-center gap-1.5 bg-zinc-50 px-2 py-1 rounded-full">
+                                                    <span>💬</span> {post.comments?.length || 0}
+                                                </div>
                                             </div>
                                         </div>
+
+                                        {previewImage && (
+                                            <div className="w-full md:w-48 h-32 flex-shrink-0 bg-zinc-100 rounded-lg overflow-hidden border border-zinc-200">
+                                                <img
+                                                    src={previewImage}
+                                                    alt={title}
+                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                                />
+                                            </div>
+                                        )}
                                     </Link>
                                 </article>
                             )

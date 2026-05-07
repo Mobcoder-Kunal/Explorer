@@ -3,7 +3,7 @@ import { EditorBlock, EditorState } from "./types";
 
 const initialState: EditorState = {
     blocks: [
-        { id: '1', type: 'heading', content: '' },
+        { id: '1', type: 'heading1', content: '' },
         { id: '2', type: 'text', content: '' },
     ],
     activeBlockId: '1',
@@ -16,8 +16,10 @@ export const editorSlice = createSlice({
     name: 'editor',
     initialState,
     reducers: {
-        setBlocks: (state, action) => { state.blocks = action.payload; },
-        
+        setBlocks: (state, action) => { 
+            state.blocks = action.payload; 
+        },
+
         togglePublicStatus: (state) => {
             state.isPublic = !state.isPublic;
         },
@@ -26,6 +28,10 @@ export const editorSlice = createSlice({
             state.currentPageId = action.payload._id;
             state.isPublic = action.payload.isPublic;
             state.blocks = action.payload.blocks;
+
+            if (action.payload.blocks.length > 0) {
+                state.activeBlockId = action.payload.blocks[0].id;
+            }
         },
 
         updateBlockContent: (state, action: PayloadAction<{ id: string; content: string }>) => {
@@ -34,34 +40,48 @@ export const editorSlice = createSlice({
                 block.content = action.payload.content;
             }
         },
-        
-        addBlock: (state, action: PayloadAction<{ afterId: string, type: EditorBlock['type'] }>) => {
-            const index = state.blocks.findIndex(block => block.id === action.payload.afterId)
+
+        addBlock: (state, action: PayloadAction<{ afterId?: string, type: EditorBlock['type'] }>) => {
             const newBlock: EditorBlock = {
                 id: crypto.randomUUID(),
                 type: action.payload.type,
                 content: '',
             };
-            const insertAt = index === -1 ? state.blocks.length : index + 1;
-            state.blocks.splice(insertAt, 0, newBlock);
+
+            if (action.payload.afterId) {
+                const index = state.blocks.findIndex(block => block.id === action.payload.afterId);
+                state.blocks.splice(index + 1, 0, newBlock);
+            } else {
+                state.blocks.push(newBlock);
+            }
+            
             state.activeBlockId = newBlock.id;
         },
 
         deleteBlock: (state, action: PayloadAction<{ id: string }>) => {
             const index = state.blocks.findIndex(block => block.id === action.payload.id);
             if (index !== -1) {
-                if (state.activeBlockId === action.payload.id) {
+                const isDeletedFocused = state.activeBlockId === action.payload.id;
+
+                if (isDeletedFocused) {
                     if (index > 0) {
                         state.activeBlockId = state.blocks[index - 1].id;
                     } else if (index < state.blocks.length - 1) {
                         state.activeBlockId = state.blocks[index + 1].id;
-                    } else {
-                        const newBlock: EditorBlock = { id: Date.now().toString(), type: 'text', content: '' };
-                        state.blocks.push(newBlock);
-                        state.activeBlockId = newBlock.id;
                     }
                 }
+
                 state.blocks.splice(index, 1);
+
+                if (state.blocks.length === 0) {
+                    const fallbackBlock: EditorBlock = { 
+                        id: crypto.randomUUID(), 
+                        type: 'text', 
+                        content: '' 
+                    };
+                    state.blocks.push(fallbackBlock);
+                    state.activeBlockId = fallbackBlock.id;
+                }
             }
         },
 
@@ -82,24 +102,47 @@ export const editorSlice = createSlice({
             if (index > 0) {
                 const currentBlock = state.blocks[index];
                 const previousBlock = state.blocks[index - 1];
-                previousBlock.content += currentBlock.content;
-                state.activeBlockId = previousBlock.id;
-                state.blocks.splice(index, 1);
+
+                if (previousBlock.type !== 'image') {
+                    previousBlock.content += currentBlock.content;
+                    state.activeBlockId = previousBlock.id;
+                    state.blocks.splice(index, 1);
+                }
             }
+        },
+
+        focusPreviousBlock: (state, action: PayloadAction<{ id: string }>) => {
+            const index = state.blocks.findIndex(b => b.id === action.payload.id);
+            if (index > 0) {
+                state.activeBlockId = state.blocks[index - 1].id;
+            }
+        },
+
+        focusNextBlock: (state, action: PayloadAction<{ id: string }>) => {
+            const index = state.blocks.findIndex(b => b.id === action.payload.id);
+            if (index < state.blocks.length - 1) {
+                state.activeBlockId = state.blocks[index + 1].id;
+            }
+        },
+        
+        setActiveBlock: (state, action: PayloadAction<{ id: string }>) => {
+            state.activeBlockId = action.payload.id;
         }
     },
 });
 
-// Added togglePublicStatus and setCurrentPage to exports
-export const { 
-    updateBlockContent, 
-    addBlock, 
-    deleteBlock, 
-    changeBlockType, 
-    mergeWithPrevious, 
+export const {
+    updateBlockContent,
+    addBlock,
+    deleteBlock,
+    changeBlockType,
+    mergeWithPrevious,
     setBlocks,
     togglePublicStatus,
-    setCurrentPage
+    setCurrentPage,
+    focusPreviousBlock,
+    focusNextBlock,
+    setActiveBlock
 } = editorSlice.actions;
 
 export default editorSlice.reducer;

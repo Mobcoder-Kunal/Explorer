@@ -1,29 +1,43 @@
 import mongoose from 'mongoose';
 
-const blockSchema = new mongoose.Schema({
-    id: String,
-    type: { type: String, enum: ['text', 'heading', 'image'] },
-    content: String,
-})
-
-const pageSchema = new mongoose.Schema({
-    title: { type: String, default: "Untitled" },
-    blocks: [
-        {
-            id: String,
-            type: { type: String, enum: ['text', 'heading', 'image', 'todo'] },
-            content: String
-        }
-    ],
-    isPublic: { type: Boolean, default: false },
-    authorId: { 
-        type: mongoose.Schema.Types.ObjectId, 
-        ref: 'user', 
-        required: true 
+const BlockSchema = new mongoose.Schema({
+    id: { type: String, required: true },
+    type: {
+        type: String,
+        enum: ['text', 'heading1', 'heading2', 'heading3', 'image'],
+        required: true
     },
-    updatedAt: { type: Date, default: Date.now }
+    content: { type: String, default: '' }
 });
 
-// The OverwriteModelError is a common issue when using Mongoose with Next.js. Because Next.js uses Hot Module Replacement (HMR), it re-compiles your code every time you save a file. Mongoose, however, stays "alive" in the background and gets confused when you try to define the same model ('user') more than once.
-const Page = mongoose.models.Page || mongoose.model('Page', pageSchema);
+const PageSchema = new mongoose.Schema({
+    userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: false
+    },
+    title: {
+        type: String,
+        default: 'Untitled Page'
+    },
+    blocks: [BlockSchema],
+    isPublic: {
+        type: Boolean,
+        default: false
+    },
+    updatedAt: {
+        type: Date,
+        default: Date.now
+    },
+    views: { type: Number, default: 0 },
+    likes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], 
+    comments: [{
+        userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        text: String,
+        createdAt: { type: Date, default: Date.now }
+    }],
+    isPublic: { type: Boolean, default: false }
+}, { timestamps: true });
+
+const Page = mongoose.models.Page || mongoose.model('Page', PageSchema);
 export default Page;

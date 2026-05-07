@@ -74,6 +74,15 @@ app.post('/api/pages', async (req, res) => {
     try {
         const { _id, blocks, isPublic } = req.body;
 
+        const firstTextBlock = blocks.find(b => 
+            (b.type === 'text' || b.type.startsWith('heading')) && 
+            b.content.trim().length > 0
+        );
+
+        const dynamicTitle = firstTextBlock 
+            ? firstTextBlock.content.substring(0, 100) 
+            : "Untitled Page";
+
         const queryId = (_id && mongoose.Types.ObjectId.isValid(_id))
             ? _id
             : new mongoose.Types.ObjectId();
@@ -82,7 +91,7 @@ app.post('/api/pages', async (req, res) => {
             { _id: queryId },
             {
                 $set: {
-                    title: blocks[0].content,
+                    title: dynamicTitle, // Use the dynamic title here
                     blocks,
                     isPublic,
                     updatedAt: new Date()
@@ -105,13 +114,39 @@ app.post('/api/pages', async (req, res) => {
 app.patch('/api/pages/:id', async (req, res) => {
     try {
         const { blocks, isPublic } = req.body;
+
+        let dynamicTitle = "Untitled Page";
+        if (blocks && blocks.length > 0) {
+            const firstTextBlock = blocks.find(b => 
+                (b.type === 'text' || b.type.startsWith('heading')) && 
+                b.content?.trim().length > 0
+            );
+            
+            if (firstTextBlock) {
+                dynamicTitle = firstTextBlock.content.substring(0, 100);
+            }
+        }
+
         const page = await Page.findByIdAndUpdate(
             req.params.id,
-            { blocks, isPublic, updatedAt: Date.now() },
-            { new: true }
+            { 
+                $set: {
+                    title: dynamicTitle,
+                    blocks, 
+                    isPublic, 
+                    updatedAt: Date.now() 
+                } 
+            },
+            { new: true, runValidators: true }
         );
+
+        if (!page) {
+            return res.status(404).json({ message: "Page not found" });
+        }
+
         res.json(page);
     } catch (err) {
+        console.error("Update Error:", err.message);
         res.status(500).json({ error: err.message });
     }
 });
@@ -127,6 +162,24 @@ app.get('/api/pages/:id', async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
+
+app.patch('/api/pages/:id/views', async (req, res) => {
+    await Page.findOneAndUpdate(req.params.id, { $inc: {views: 1}});
+    return res.status(200).send();
+})
+
+app.patch('/api/pages/:id/likes', async (req, res) => {
+    const page = await Page.findById(req.params.id);
+    const userId = req.user.id;
+
+    if (page.likes.includes(userId) ) {
+        page.likes = page.likes.filter(id => id.toString() !== userId);
+    } else {
+        page.likes.push[userId];
+    }
+    await page.save();
+    res.json({ likeCount: page.like.length })
+})
 
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
 
