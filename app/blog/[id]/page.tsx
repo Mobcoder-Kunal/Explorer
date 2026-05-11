@@ -32,7 +32,7 @@ export default async function BlogPage(props: PageProps) {
         <div className="min-h-screen bg-white">
             <Navbar />
             <article className="max-w-3xl mx-auto py-16 px-6">
-                
+
                 <h1 className="text-4xl md:text-5xl font-bold font-serif mb-8 leading-tight">
                     {post.title || "Untitled Post"}
                 </h1>
@@ -49,7 +49,7 @@ export default async function BlogPage(props: PageProps) {
                             </div>
                         </div>
                     </div>
-                    
+
                     <button className="flex items-center gap-2 border border-zinc-200 px-4 py-2 rounded-full hover:bg-zinc-50 transition-colors text-sm font-medium">
                         ❤️‍🔥 {post.likes?.length || 0}
                     </button>
@@ -61,9 +61,9 @@ export default async function BlogPage(props: PageProps) {
 
                 <section className="border-t pt-12 mt-12">
                     <h3 className="text-2xl font-bold mb-8">Comments ({post.comments?.length || 0})</h3>
-                    
+
                     <div className="bg-zinc-50 p-4 rounded-xl mb-10 border border-zinc-100">
-                        <textarea 
+                        <textarea
                             placeholder="What are your thoughts?"
                             className="w-full bg-transparent border-none focus:ring-0 text-zinc-700 resize-none h-24"
                         />
@@ -78,8 +78,8 @@ export default async function BlogPage(props: PageProps) {
                         {post.comments?.length > 0 ? (
                             post.comments.map((comment: any) => (
                                 <div key={comment._id} className="flex gap-4">
-                                    <img 
-                                        src={comment.userId?.profilePic || `https://ui-avatars.com/api/?name=${comment.userId?.username}`} 
+                                    <img
+                                        src={comment.userId?.profilePic || `https://ui-avatars.com/api/?name=${comment.userId?.username}`}
                                         className="w-8 h-8 rounded-full border"
                                     />
                                     <div>

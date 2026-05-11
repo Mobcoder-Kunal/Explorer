@@ -17,16 +17,40 @@ const handler = NextAuth({
                     headers: { "Content-Type": "application/json" }
                 });
 
-                const user = await res.json();
+                const data = await res.json();
 
-                if (!res.ok || !user) {
-                    return null;
+                console.log("Backend Response:", data);
+
+                if (res.ok && data.user) {
+                    return {
+                        id: data.user.id,
+                        name: data.user.name,
+                        email: data.user.email,
+                        accessToken: data.token
+                    };
                 }
 
-                return user;
+                return null;
             }
         })
     ],
+    callbacks: {
+        async jwt({ token, user }: any) {
+            if (user) {
+                token.accessToken = user.accessToken;
+                token.id = user.id;
+            }
+            return token;
+        },
+
+        async session({ session, token }: any) {
+            if (session.user) {
+                session.user.accessToken = token.accessToken;
+                session.user.id = token.id;
+            }
+            return session;
+        }
+    },
     secret: process.env.NEXTAUTH_SECRET,
     pages: { signIn: '/login' }
 });

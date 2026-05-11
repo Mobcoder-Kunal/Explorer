@@ -42,7 +42,7 @@ export default async function HomePage() {
                                 b.type === 'text' && b.content.trim() !== ""
                             )?.content || "Read more...";
                             const previewImage = post.blocks.find((b: any) => b.type === 'image')?.content;
-                            
+
                             // Get author info
                             const authorName = post.userId?.username || "Explorer Writer";
                             const authorPic = post.userId?.profilePic || "https://ui-avatars.com/api/?name=" + authorName;
@@ -64,7 +64,7 @@ export default async function HomePage() {
                                             <p className="text-zinc-600 line-clamp-2 leading-relaxed font-sans text-lg mb-4">
                                                 {previewText}
                                             </p>
-                                            
+
                                             {/* --- NEW: Stats Row --- */}
                                             <div className="flex items-center gap-4 text-zinc-500 text-sm">
                                                 <div className="flex items-center gap-1.5 bg-zinc-50 px-2 py-1 rounded-full">
