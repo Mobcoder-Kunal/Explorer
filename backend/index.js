@@ -10,7 +10,6 @@ import User from './models/User.js';
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middlewares
 app.use(cors({
     origin: 'http://localhost:3000',
     methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -21,46 +20,45 @@ app.use(express.json({ limit: '50mb' }));
 
 const protect = async (req, res, next) => {
     try {
-        let token = req.headers.authorization?.split(' ')[1];
-        if (!token) return res.status(401).json({ message: "Unauthorized" });
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) return res.status(401).json({ message: "Unauthorized: No token provided" });
 
         const decoded = jwt.verify(token, process.env.NEXTAUTH_SECRET);
         req.user = decoded;
         next();
     } catch (err) {
         console.error("JWT Verification Error:", err.message);
-        res.status(401).json({ message: "Invalid Token" });
+        res.status(401).json({ message: "Invalid or expired token" });
     }
 };
 
-// MongoDB Connection
-mongoose.connect('mongodb://127.0.0.1:27017/blog_app')
-    .then(() => console.log("Connected to mongoDB"))
-    .catch(err => console.error("MongoDB connection error", err));
+const generateDynamicTitle = (blocks) => {
+    if (!blocks || !Array.isArray(blocks)) return "Untitled Page";
+    const firstTextBlock = blocks.find(b =>
+        (b.type === 'text' || b.type.startsWith('heading')) &&
+        b.content?.trim().length > 0
+    );
+    return firstTextBlock ? firstTextBlock.content.substring(0, 100) : "Untitled Page";
+};
 
-// Auth Routes
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/blog_app')
+    .then(() => console.log("Connected to MongoDB"))
+    .catch(err => console.error("MongoDB connection error:", err));
 
 app.post('/api/auth/signup', async (req, res) => {
     try {
         const { name, email, password } = req.body;
-        const existingUser = await User.findOne({ email: email.toLowerCase() });
-        if (existingUser) {
-            return res.status(400).json({ message: "User already exists with this email" });
-        }
+        const normalizedEmail = email.toLowerCase();
+
+        const existingUser = await User.findOne({ email: normalizedEmail });
+        if (existingUser) return res.status(400).json({ message: "User already exists" });
 
         const hashedPassword = await bcrypt.hash(password, 10);
-
-        const newUser = new User({
-            name,
-            email: email.toLowerCase(),
-            password: hashedPassword,
-        });
-
+        const newUser = new User({ name, email: normalizedEmail, password: hashedPassword });
         await newUser.save();
 
         res.status(201).json({ message: "User created successfully!" });
     } catch (err) {
-        console.error("Signup Error:", err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -70,14 +68,7 @@ app.post('/api/auth/login', async (req, res) => {
         const { email, password } = req.body;
         const user = await User.findOne({ email: email.toLowerCase() });
 
-        if (!user) {
-            console.log("Login failed: User not found");
-            return res.status(401).json({ message: "Invalid email or password" });
-        }
-
-        const isValid = await bcrypt.compare(password, user.password);
-        if (!isValid) {
-            console.log("Login failed: Wrong password");
+        if (!user || !(await bcrypt.compare(password, user.password))) {
             return res.status(401).json({ message: "Invalid email or password" });
         }
 
@@ -89,119 +80,67 @@ app.post('/api/auth/login', async (req, res) => {
 
         res.json({
             token,
-            user: {
-                id: user._id.toString(),
-                email: user.email,
-                name: user.name
-            }
+            user: { id: user._id, email: user.email, name: user.name }
         });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-// Fetch Routes
-
-app.get('/api/blogs/public', async (req, res) => {
+app.get('/api/pages/public', async (req, res) => {
     try {
-        const publicPages = await Page.find({ isPublic: true })
+        const pages = await Page.find({ isPublic: true })
+            .populate('userId', 'name email profilePic')
             .sort({ updatedAt: -1 })
-            .populate('userId', 'name profilePic'); // <--- DO YOU HAVE THIS?
-        res.json(publicPages);
+            .limit(20);
+        res.json(pages);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-
-app.post('/api/pages', async (req, res) => {
+app.post('/api/pages', protect, async (req, res) => {
     try {
-        const { _id, blocks, isPublic } = req.body;
+        const { blocks, isPublic } = req.body;
+        const title = generateDynamicTitle(blocks);
 
-        const firstTextBlock = blocks.find(b =>
-            (b.type === 'text' || b.type.startsWith('heading')) &&
-            b.content.trim().length > 0
-        );
+        const newPage = new Page({
+            userId: req.user.id,
+            title,
+            blocks,
+            isPublic
+        });
 
-        const dynamicTitle = firstTextBlock
-            ? firstTextBlock.content.substring(0, 100)
-            : "Untitled Page";
-
-        const queryId = (_id && mongoose.Types.ObjectId.isValid(_id))
-            ? _id
-            : new mongoose.Types.ObjectId();
-
-        const updatedPage = await Page.findOneAndUpdate(
-            { _id: queryId },
-            {
-                $set: {
-                    title: dynamicTitle,
-                    blocks,
-                    isPublic,
-                    updatedAt: new Date()
-                }
-            },
-            {
-                upsert: true,
-                returnDocument: 'after',
-                setDefaultsOnInsert: true
-            }
-        );
-
-        return res.status(200).json(updatedPage);
+        await newPage.save();
+        res.status(201).json(newPage);
     } catch (err) {
-        console.error("Save Error:", err.message);
-        return res.status(500).json({ error: err.message });
+        res.status(500).json({ error: err.message });
     }
 });
 
-app.patch('/api/pages/:id', async (req, res) => {
+app.patch('/api/pages/:id', protect, async (req, res) => {
     try {
         const { blocks, isPublic } = req.body;
+        const title = generateDynamicTitle(blocks);
 
-        let dynamicTitle = "Untitled Page";
-        if (blocks && blocks.length > 0) {
-            const firstTextBlock = blocks.find(b =>
-                (b.type === 'text' || b.type.startsWith('heading')) &&
-                b.content?.trim().length > 0
-            );
-
-            if (firstTextBlock) {
-                dynamicTitle = firstTextBlock.content.substring(0, 100);
-            }
-        }
-
-        const page = await Page.findByIdAndUpdate(
-            req.params.id,
-            {
-                $set: {
-                    title: dynamicTitle,
-                    blocks,
-                    isPublic,
-                    updatedAt: Date.now()
-                }
-            },
+        const page = await Page.findOneAndUpdate(
+            { _id: req.params.id, userId: req.user.id }, // Ownership check
+            { $set: { title, blocks, isPublic, updatedAt: Date.now() } },
             { new: true, runValidators: true }
         );
 
-        if (!page) {
-            return res.status(404).json({ message: "Page not found" });
-        }
-
+        if (!page) return res.status(404).json({ message: "Page not found or unauthorized" });
         res.json(page);
     } catch (err) {
-        console.error("Update Error:", err.message);
         res.status(500).json({ error: err.message });
     }
 });
 
-
-// 1. UPDATE THIS ROUTE to populate user info
 app.get('/api/pages/:id', async (req, res) => {
     try {
         const page = await Page.findById(req.params.id)
-            .populate('userId', 'name email profilePic') // Links the author
-            .populate('comments.userId', 'name profilePic'); // Links comment authors
+            .populate('userId', 'name email profilePic')
+            .populate('comments.userId', 'name profilePic');
 
         if (!page) return res.status(404).json({ message: "Page not found" });
         res.json(page);
@@ -213,27 +152,24 @@ app.get('/api/pages/:id', async (req, res) => {
 app.patch('/api/pages/:id/views', async (req, res) => {
     try {
         await Page.findByIdAndUpdate(req.params.id, { $inc: { views: 1 } });
-        res.status(200).send();
+        res.sendStatus(200);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-// 3. FIX THE LIKE LOGIC
 app.patch('/api/pages/:id/likes', protect, async (req, res) => {
     try {
         const page = await Page.findById(req.params.id);
         if (!page) return res.status(404).json({ message: "Page not found" });
 
-        const userId = req.user.id; // From the protect middleware
-
-        // Check if user already liked (Convert to string for comparison)
-        const index = page.likes.findIndex(id => id.toString() === userId.toString());
+        const userId = req.user.id;
+        const index = page.likes.findIndex(id => id.toString() === userId);
 
         if (index > -1) {
-            page.likes.splice(index, 1); // Unlike
+            page.likes.splice(index, 1);
         } else {
-            page.likes.push(userId); // Like
+            page.likes.push(userId);
         }
 
         await page.save();
@@ -243,10 +179,31 @@ app.patch('/api/pages/:id/likes', protect, async (req, res) => {
     }
 });
 
-console.log("Checking Environment Variables...");
-console.log("PORT:", process.env.PORT);
-console.log("NEXTAUTH_SECRET Loaded:", !!process.env.NEXTAUTH_SECRET);
+app.post('/api/pages/:id/comments', protect, async (req, res) => {
+    try {
+        const { text } = req.body;
+        if (!text?.trim()) return res.status(400).json({ message: "Comment cannot be empty" });
 
-app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+        const page = await Page.findById(req.params.id);
+        if (!page) return res.status(404).json({ message: "Page not found" });
 
-// { upsert: true, new: true }upsert: true: (A mix of Update + Insert). If no document is found with that ID, Mongoose will create a new one using the data provided.new: true: By default, Mongoose returns the document before it was updated. This option tells Mongoose to return the freshly updated version so you can send it back to your frontend.
+        const newComment = {
+            userId: req.user.id,
+            text: text.trim(),
+            createdAt: new Date()
+        };
+
+        page.comments.push(newComment);
+        await page.save();
+        
+        const populatedPage = await page.populate('comments.userId', 'name profilePic');
+        res.status(201).json({ comment: populatedPage.comments[populatedPage.comments.length - 1] });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+    console.log("JWT Secret Configured:", !!process.env.NEXTAUTH_SECRET);
+});

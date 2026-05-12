@@ -1,4 +1,10 @@
-export default function StaticBlockRenderer({ blocks }: { blocks: any[] }) {
+interface Block {
+    id: string;
+    type: 'text' | 'heading1' | 'heading2' | 'heading3' | 'image' | 'h1' | 'h2' | 'h3';
+    content: string;
+}
+
+export default function StaticBlockRenderer({ blocks }: { blocks: Block[] }) {
     if (!blocks || blocks.length === 0) return null;
 
     const titleBlock = blocks.find(b =>

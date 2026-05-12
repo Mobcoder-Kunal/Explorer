@@ -2,7 +2,22 @@
 import { useState } from "react"
 import { useSession } from "next-auth/react"
 
-export default function LikeButton({ postId, initialLikes, isLikedInitial }: any) {
+interface ExtendedSession {
+    user: {
+        id: string;
+        email?: string | null;
+        name?: string | null;
+        accessToken: string;
+    };
+}
+
+interface LikeButtonProps {
+    postId: string;
+    initialLikes: number;
+    isLikedInitial: boolean;
+}
+
+export default function LikeButton({ postId, initialLikes, isLikedInitial }: LikeButtonProps) {
     const { data: session } = useSession();
     const [likes, setLikes] = useState(initialLikes);
     const [isLiked, setIsLiked] = useState(isLikedInitial);
@@ -14,7 +29,7 @@ export default function LikeButton({ postId, initialLikes, isLikedInitial }: any
             const res = await fetch(`http://localhost:5000/api/pages/${postId}/likes`, {
                 method: 'PATCH',
                 headers: {
-                    'Authorization': `Bearer ${(session as any).accessToken}`,
+                    'Authorization': `Bearer ${(session as unknown as ExtendedSession).user.accessToken}`,
                     'Content-Type': 'application/json'
                 }
             });

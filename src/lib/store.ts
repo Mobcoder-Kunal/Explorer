@@ -2,11 +2,11 @@ import { configureStore, Middleware } from '@reduxjs/toolkit';
 import authReducer from './features/auth/authSlice';
 import editorReducer from './features/editor/editorSlice'
 
-const loggerMiddleware: Middleware<{}, RootState> = (store) => (next) => (action) => {
+const loggerMiddleware: Middleware = (store) => (next) => (action) => {
     if (typeof window !== 'undefined') {
-        console.group(`%c Action: ${(action as any).type} `, 'background: #222; color: #bada55; padding: 2px; border-radius: 4px;');
+        console.group(`%c Action: ${(action as { type: string }).type} `, 'background: #222; color: #bada55; padding: 2px; border-radius: 4px;');
         console.log('Previous State:', store.getState());
-        console.log('Payload:', (action as any).payload);
+        console.log('Payload:', (action as { payload?: unknown }).payload);
         const result = next(action);
         console.log('Next State:', store.getState());
         console.groupEnd();

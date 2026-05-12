@@ -13,7 +13,7 @@ const BlockSchema = new mongoose.Schema({
 const PageSchema = new mongoose.Schema({
     userId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
+        ref: 'user',
         required: false
     },
     title: {
@@ -30,14 +30,14 @@ const PageSchema = new mongoose.Schema({
         default: Date.now
     },
     views: { type: Number, default: 0 },
-    likes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], 
+    likes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'user' }], 
     comments: [{
-        userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        userId: { type: mongoose.Schema.Types.ObjectId, ref: 'user' },
         text: String,
         createdAt: { type: Date, default: Date.now }
     }],
     isPublic: { type: Boolean, default: false }
 }, { timestamps: true });
 
-const Page = mongoose.models.Page || mongoose.model('Page', PageSchema);
+const Page = mongoose.models.Page || mongoose.model('page', PageSchema);
 export default Page;

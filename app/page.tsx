@@ -1,9 +1,41 @@
 import Link from 'next/link';
 import Navbar from '@/src/components/Navbar';
+import Image from 'next/image';
+
+interface Block {
+    id: string;
+    type: string;
+    content: string;
+}
+
+interface User {
+    _id: string;
+    name: string;
+    email: string;
+    profilePic?: string;
+}
+
+interface Comment {
+    _id: string;
+    userId: User;
+    text: string;
+    createdAt: string;
+}
+
+interface Post {
+    _id: string;
+    title: string;
+    blocks: Block[];
+    userId: User;
+    views: number;
+    likes: string[];
+    comments: Comment[];
+    updatedAt: string;
+}
 
 async function getPublicPosts() {
     try {
-        const res = await fetch('http://localhost:5000/api/blogs/public', {
+        const res = await fetch('http://localhost:5000/api/pages/public', {
             cache: 'no-store'
         });
         if (!res.ok) return [];
@@ -36,21 +68,21 @@ export default async function HomePage() {
                             <p className="text-zinc-400">No public stories yet.</p>
                         </div>
                     ) : (
-                        posts.map((post: any) => {
+                        posts.map((post: Post) => {
                             const title = post.title || "Untitled Story";
-                            const previewText = post.blocks.find((b: any) =>
+                            const previewText = post.blocks.find((b: Block) =>
                                 b.type === 'text' && b.content.trim() !== ""
                             )?.content || "Read more...";
-                            const previewImage = post.blocks.find((b: any) => b.type === 'image')?.content;
+                            const previewImage = post.blocks.find((b: Block) => b.type === 'image')?.content;
 
                             // Get author info
-                            const authorName = post.userId?.username || "Explorer Writer";
+                            const authorName = post.userId?.name || "Explorer Writer";
                             const authorPic = post.userId?.profilePic || "https://ui-avatars.com/api/?name=" + authorName;
 
                             return (
                                 <article key={post._id} className="group border-b pb-10 last:border-0">
                                     <div className="flex items-center gap-2 mb-4">
-                                        <img src={authorPic} className="w-6 h-6 rounded-full object-cover" alt={authorName} />
+                                        <Image src={authorPic} width={24} height={24} className="w-6 h-6 rounded-full object-cover" alt={authorName} />
                                         <span className="text-sm font-medium text-zinc-800">{authorName}</span>
                                         <span className="text-zinc-400 text-xs">•</span>
                                         <span className="text-zinc-500 text-xs">{new Date(post.updatedAt).toLocaleDateString()}</span>
@@ -81,9 +113,11 @@ export default async function HomePage() {
 
                                         {previewImage && (
                                             <div className="w-full md:w-48 h-32 flex-shrink-0 bg-zinc-100 rounded-lg overflow-hidden border border-zinc-200">
-                                                <img
+                                                <Image
                                                     src={previewImage}
                                                     alt={title}
+                                                    width={192}
+                                                    height={128}
                                                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                                 />
                                             </div>

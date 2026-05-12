@@ -27,6 +27,7 @@ export default function EditorHeader() {
             setStatus("Saved!");
         }
     } catch (err) {
+        console.error("Save error:", err);
         setStatus("Error");
     }
 };

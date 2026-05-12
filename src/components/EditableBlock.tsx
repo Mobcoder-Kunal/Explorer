@@ -25,7 +25,6 @@ function EditableBlock({ block }: Props) {
 
     const activeBlockId = useAppSelector((state) => state.editor.activeBlockId);
     const [showMenu, setShowMenu] = useState(false);
-    const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
 
     useEffect(() => {
         if (activeBlockId === block.id && contentRef.current) {

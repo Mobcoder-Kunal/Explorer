@@ -11,7 +11,7 @@ export default function AuthSync({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         if (status === "authenticated" && session?.user) {
             dispatch(setUser({
-                id: (session.user as any).id,
+                id: (session.user as { id: string }).id,
                 name: session.user.name || "",
                 email: session.user.email || ""
             }));

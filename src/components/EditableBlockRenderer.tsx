@@ -1,6 +1,6 @@
 'use client';
-
-import { useAppDispatch, useAppSelector } from "../lib/hooks";
+import { useAppDispatch, useAppSelector } from '../lib/hooks';
+import { EditorBlock } from '../lib/features/editor/types';
 import EditableBlock from "./EditableBlock";
 import { addBlock, setActiveBlock } from "../lib/features/editor/editorSlice";
 
@@ -21,7 +21,7 @@ function BlockRenderer() {
     return (
         <div className="max-w-3xl mx-auto p-10 min-h-screen flex flex-col">
             <div className="space-y-2">
-                {blocks.map((block: any) => (
+                {blocks.map((block: EditorBlock) => (
                     <EditableBlock key={block.id} block={block} />
                 ))}
             </div>
